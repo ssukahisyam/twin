@@ -1,0 +1,91 @@
+# Tahap 0 - Uji Kelayakan
+# Membangun APK demo dari 2 engine virtual kandidat agar bisa diuji di HP (Android 16)
+# sebelum aplikasi Twin dibuat. Hasil: pre-release "uji-kelayakan" berisi 2 APK.
+name: Uji Kelayakan (Tahap 0)
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - .github/workflows/feasibility.yml
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    name: Build ${{ matrix.name }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: Engine-A-NewBlackbox
+            repo: ALEX5402/NewBlackbox
+            ref: 89b59836c66f173756a4ae258cf379a957649820
+          - name: Engine-B-BlacksBlackBox
+            repo: Black00Z/Blacks-BlackBox
+            ref: 40282a7bf4500948cfd598fc67e6e63114b26dd9
+    steps:
+      - name: Checkout engine
+        uses: actions/checkout@v4
+        with:
+          repository: ${{ matrix.repo }}
+          ref: ${{ matrix.ref }}
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v4
+
+      - name: Accept Android SDK licenses
+        run: yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --licenses > /dev/null || true
+
+      - name: Build APK
+        run: |
+          chmod +x ./gradlew
+          ./gradlew :app:assembleDebug --stacktrace
+
+      - name: Collect APK
+        run: |
+          mkdir -p out
+          APK=$(find app/build/outputs/apk/debug -name "*universal*.apk" | head -n 1)
+          if [ -z "$APK" ]; then APK=$(find app/build/outputs/apk/debug -name "*.apk" | head -n 1); fi
+          echo "Found: $APK"
+          cp "$APK" "out/${{ matrix.name }}.apk"
+          ls -la out
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.name }}
+          path: out/*.apk
+
+  release:
+    name: Publish pre-release
+    needs: build
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          path: apks
+          merge-multiple: true
+
+      - name: Publish
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          ls -la apks
+          if [ -z "$(ls -A apks 2>/dev/null)" ]; then echo "No APK built"; exit 1; fi
+          gh release delete uji-kelayakan --repo "$GITHUB_REPOSITORY" --yes --cleanup-tag || true
+          gh release create uji-kelayakan apks/*.apk \
+            --repo "$GITHUB_REPOSITORY" \
+            --prerelease \
+            --title "Tahap 0 - Uji Kelayakan" \
+            --notes "APK uji coba engine clone. Install keduanya, lalu coba clone aplikasi target (mis. Muse) 2x di masing-masing. Lihat README untuk langkah uji."
