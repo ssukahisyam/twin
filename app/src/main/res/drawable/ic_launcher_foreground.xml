@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <!-- Minimalist twin overlapping rings -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:fillAlpha="0.95"
+        android:pathData="M45,38A16,16 0 1,0 45,70A16,16 0 1,0 45,38ZM45,43.5A10.5,10.5 0 1,1 45,64.5A10.5,10.5 0 1,1 45,43.5Z" />
+    <path
+        android:fillColor="#FFFFFF"
+        android:fillAlpha="0.72"
+        android:pathData="M63,38A16,16 0 1,0 63,70A16,16 0 1,0 63,38ZM63,43.5A10.5,10.5 0 1,1 63,64.5A10.5,10.5 0 1,1 63,43.5Z" />
+</vector>
